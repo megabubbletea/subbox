@@ -42,63 +42,26 @@ function handleDrop(e) {
 }
 
 function processFile(file) {
-    let MP4Box = window.api.mp4box;
-    var video = document.createElement("video");
-    var chunkSize  = 1024 * 1024; // bytes
-    var fileSize  = file.size;
-    var offset = 0;
-    var readBlock = null; 
-  
-    mp4boxfile = MP4Box.createFile();
-    mp4boxfile.onError = function(e) {
-      console.log("Failed to parse ISOBMFF data");
-    };
-  
-    var gpmd_track_id = null;
-    var texttrack = null;
-    var numSamples = null;
-    mp4boxfile.onReady = function(info) {
-      for (var i = 0; i < info.tracks.length; i++){
-        if (info.tracks[i].codec == "gpmd"){
-          gpmd_track_id = i;
-          texttrack = video.addTextTrack("metadata", "Text track for extraction of track "+info.tracks[gpmd_track_id].id);
-          numSamples = info.tracks[gpmd_track_id].nb_samples;
-        }
-      }
-      mp4boxfile.onSamples = function (id, user, samples) {
-        console.log("Received "+samples.length+" samples on track "+id+" for object "+user);
-      }
-      mp4boxfile.setExtractionOptions(info.tracks[gpmd_track_id].id, texttrack, { nbSamples: numSamples });
-      mp4boxfile.start();
-    };
-  
-    var onparsedbuffer = function(mp4boxfileobj, buffer) {
-      buffer.fileStart = offset;
-      mp4boxfileobj.appendBuffer(buffer);
+    if (file) {
+        const reader = new FileReader();
+        
+        reader.onload = function (e) {
+            const arrayBuffer = e.target.result;
+            mp4boxfile = window.api.mp4box.createFile();
+            arrayBuffer.fileStart = 0;
+            
+            // Append the buffer for processing
+            mp4boxfile.appendBuffer(arrayBuffer);
+        
+            // Flush to force processing of the appended data
+            mp4boxfile.flush();
+        
+            // Once the file is ready, you can access its information
+            mp4boxfile.onReady = function (info) {
+                console.log("File info:", info);
+            };
+        };
+        
+        reader.readAsArrayBuffer(file);
     }
-  
-    var onBlockRead = function(evt) {
-      if (evt.target.error == null) {
-        onparsedbuffer(mp4boxfile, evt.target.result); // callback for handling read chunk
-        offset += evt.target.result.byteLength;
-      } else {
-        console.log("Read error: " + evt.target.error);
-        return;
-      }
-      if (offset >= fileSize) {
-        console.log("Done reading file ("+fileSize+ " bytes)");
-        mp4boxfile.flush();
-        return;
-      }
-      readBlock(offset, chunkSize, file);
-    }
-  
-    readBlock = function(_offset, length, _file) {
-      var r = new FileReader();
-      var blob = _file.slice(_offset, length + _offset);
-      r.onload = onBlockRead;
-      r.readAsArrayBuffer(blob);
-    }
-  
-    readBlock(offset, chunkSize, file);
 }
