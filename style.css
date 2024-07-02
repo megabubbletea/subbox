@@ -1,0 +1,9 @@
+#dropzone {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    text-align: center;
+}
+
+#dropzone.highlight {
+    border-color: blue;
+}

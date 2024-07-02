@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+const MP4Box = require('mp4box');
 
 window.addEventListener('DOMContentLoaded', () => {
     const replaceText = (selector, text) => {
@@ -11,7 +12,8 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
   
-contextBridge.exposeInMainWorld('electronAPI', {
+contextBridge.exposeInMainWorld('api', {
     sendToMain: (channel, data) => ipcRenderer.send(channel, data),
     receiveFromMain: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args)),
+    mp4box: MP4Box
 });
