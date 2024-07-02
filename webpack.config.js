@@ -6,7 +6,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 module.exports = {
     mode: 'development',
-    entry: './src/main.ts',
+    entry: ['./src/main.ts', './src/main.scss'],
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'main.js'
@@ -21,7 +21,6 @@ module.exports = {
                 test: /\.s?css$/i,
                 use: [
                     MiniCssExtractPlugin.loader,
-                    'style-loader',
                     'css-loader',
                     'postcss-loader',
                     'sass-loader',
