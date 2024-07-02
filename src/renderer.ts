@@ -47,35 +47,36 @@ function handleDrop(e: DragEvent) {
         let files = dt.files;
         
         // Process each file
-        // Array.from(files).forEach(processFile);
+        Array.from(files).forEach(processFile);
     }
 }
 
-// function processFile(file: File) {
-//     if (file) {
-//         const reader = new FileReader();
+function processFile(file: File) {
+    if (file) {
+        const reader = new FileReader();
         
-//         reader.onload = function (e: ProgressEvent<FileReader>) {
-//             const arrayBuffer: ArrayBuffer | null = e.target?.result;
-//             let mp4boxfile: any;
+        reader.onload = function (e: ProgressEvent<FileReader>) {
+            const arrayBuffer: ArrayBuffer | null;
+            let mp4boxfile: any;
             
-//             if (arrayBuffer !== null) {
-//                 mp4boxfile = window.api.mp4box.createFile();
-//                 arrayBuffer.fileStart = 0;
+            if (arrayBuffer !== null) {
+                // Create a new file
+                mp4boxfile = window.api.mp4box.createFile(); // ts-ignore
+                mp4boxfile.fileStart = 0;
                 
-//                 // Append the buffer for processing
-//                 mp4boxfile.appendBuffer(arrayBuffer);
+                // Append the buffer for processing
+                mp4boxfile.appendBuffer(arrayBuffer);
             
-//                 // Flush to force processing of the appended data
-//                 mp4boxfile.flush();
+                // Flush to force processing of the appended data
+                mp4boxfile.flush();
             
-//                 // Once the file is ready, you can access its information
-//                 mp4boxfile.onReady = function (info: any) {
-//                     console.log("File info:", info);
-//                 };
-//             }
-//         };
+                // Once the file is ready, you can access its information
+                mp4boxfile.onReady = function (info: any) {
+                    console.log("File info:", info);
+                };
+            }
+        };
         
-//         reader.readAsArrayBuffer(file);
-//     }
-// }
+        reader.readAsArrayBuffer(file);
+    }
+}
