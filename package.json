@@ -4,9 +4,7 @@
   "description": "Subtitle manipulator for MP4 videos.",
   "main": "main.js",
   "scripts": {
-    "start": "electron ./dist/main.js",
-    "build": "tsc && cp ./src/index.html ./dist/index.html && cp ./src/main.css ./dist/main.css",
-    "build:watch": "npm run build -- --watch",
+    "start": "electron ./app/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
