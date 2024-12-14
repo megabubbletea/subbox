@@ -16,7 +16,6 @@ class Subbox {
         });
 
         app.on('window-all-closed', this.handleWindowsClosed.bind(this));
-        app.on('window-all-closed', this.handleWindowsClosed.bind(this));
     }
 
     registerIpcHandlers () {
