@@ -15,5 +15,20 @@ window.addEventListener('DOMContentLoaded', () => {
 contextBridge.exposeInMainWorld('api', {
     send: (channel, data) => ipcRenderer.send(channel, data),
     receive: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args)),
-    mp4box: MP4Box
+    mp4box: {
+        createFile: () => {
+            const file = MP4Box.createFile();
+            return {
+                appendBuffer: (buffer, fileStart) => {
+                    buffer.fileStart = fileStart;  // Add fileStart property
+                    file.appendBuffer(buffer);
+                },
+                onReady: (callback) => {
+                    file.onReady = callback;
+                },
+                stop: () => file.stop(),
+                flush: () => file.flush()
+            };
+        }
+    }
 });

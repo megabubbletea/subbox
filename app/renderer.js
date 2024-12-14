@@ -20,20 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.addEventListener('drop', handleDrop, false);
 });
 
-function preventDefaults(e) {
+function preventDefaults (e) {
     e.preventDefault();
     e.stopPropagation();
 }
 
-function highlight(e) {
+function highlight (e) {
     document.getElementById('dropzone').classList.add('highlight');
 }
 
-function unhighlight(e) {
+function unhighlight (e) {
     document.getElementById('dropzone').classList.remove('highlight');
 }
 
-function handleDrop(e) {
+function handleDrop (e) {
     let dt = e.dataTransfer;
     let files = dt.files;
 
@@ -41,27 +41,33 @@ function handleDrop(e) {
     Array.from(files).forEach(processFile);
 }
 
-function processFile(file) {
-    if (file) {
-        const reader = new FileReader();
-        
-        reader.onload = function (e) {
+function processFile (file) {
+    if (!file) return;
+
+    let mp4boxfile = window.api.mp4box.createFile();
+
+    mp4boxfile.onReady((info) => {
+        console.log('MP4Box file is ready:', info);
+    });
+
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+        try {
             const arrayBuffer = e.target.result;
-            mp4boxfile = window.api.mp4box.createFile();
-            arrayBuffer.fileStart = 0;
-            
-            // Append the buffer for processing
-            mp4boxfile.appendBuffer(arrayBuffer);
-        
-            // Flush to force processing of the appended data
+            // Add fileStart property to the buffer
+            mp4boxfile.appendBuffer(arrayBuffer, 0);
+            console.log('File processed successfully');
+
             mp4boxfile.flush();
-        
-            // Once the file is ready, you can access its information
-            mp4boxfile.onReady = function (info) {
-                console.log("File info:", info);
-            };
-        };
-        
-        reader.readAsArrayBuffer(file);
-    }
+        } catch (error) {
+            console.error('Error processing file:', error);
+        }
+    };
+
+    reader.onerror = function (error) {
+        console.error('Error reading file:', error);
+    };
+
+    reader.readAsArrayBuffer(file);
 }
