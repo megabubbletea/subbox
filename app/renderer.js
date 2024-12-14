@@ -117,13 +117,7 @@ function processFile (file) {
                     }).join('\n');
 
                     // Open Save As dialog and save the file
-                    window.api.showSaveDialog({
-                        title: 'Save Subtitles',
-                        defaultPath: `subtitles_track${id}.srt`,
-                        filters: [
-                            { name: 'SubRip Subtitle', extensions: ['srt'] }
-                        ]
-                    }).then(result => {
+                    window.api.showSaveDialog().then(result => {
                         if (!result.canceled) {
                             window.api.writeFile(result.filePath, srtContent)
                                 .then(() => {

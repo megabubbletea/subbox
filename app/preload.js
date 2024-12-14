@@ -15,6 +15,8 @@ window.addEventListener('DOMContentLoaded', () => {
 contextBridge.exposeInMainWorld('api', {
     send: (channel, data) => ipcRenderer.send(channel, data),
     receive: (channel, func) => ipcRenderer.on(channel, (event, ...args) => func(...args)),
+    showSaveDialog: () => ipcRenderer.invoke('show-save-dialog'),
+    writeFile: (filePath, content) => ipcRenderer.invoke('write-file', { filePath, content }),
     mp4box: {
         createFile: () => {
             const file = MP4Box.createFile();
