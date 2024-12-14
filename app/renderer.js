@@ -86,7 +86,8 @@ function processFile (file) {
 
                 let subtitles = [];
 
-                mp4boxfile.onSamples = (track_id, ref, samples) => {
+                mp4boxfile.onSamples((id, user, samples) => {
+                    console.log('Received ' + samples.length + ' samples on track ' + id + ' for object ' + user);
                     samples.forEach(sample => {
                         if (sample.data) {
                             const text = new TextDecoder().decode(sample.data);
@@ -118,7 +119,7 @@ function processFile (file) {
                     // Open Save As dialog and save the file
                     window.api.showSaveDialog({
                         title: 'Save Subtitles',
-                        defaultPath: `subtitles_track${track_id}.srt`,
+                        defaultPath: `subtitles_track${id}.srt`,
                         filters: [
                             { name: 'SubRip Subtitle', extensions: ['srt'] }
                         ]
@@ -133,7 +134,7 @@ function processFile (file) {
                                 });
                         }
                     });
-                };
+                });
 
                 // Start extraction
                 mp4boxfile.start();

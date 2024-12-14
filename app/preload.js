@@ -26,8 +26,8 @@ contextBridge.exposeInMainWorld('api', {
                 onReady: (callback) => {
                     file.onReady = callback;
                 },
-                onSamples: (id, user, samples) => {
-                    file.onSamples(id, user, samples);
+                onSamples: (callback) => {
+                    file.onSamples = callback;
                 },
                 setExtractionOptions: (trackId, user, options) => {
                     file.setExtractionOptions(trackId, user, options);
