@@ -26,12 +26,13 @@ contextBridge.exposeInMainWorld('api', {
                 onReady: (callback) => {
                     file.onReady = callback;
                 },
+                onSamples: (id, user, samples) => {
+                    file.onSamples(id, user, samples);
+                },
                 setExtractionOptions: (trackId, user, options) => {
                     file.setExtractionOptions(trackId, user, options);
                 },
-                start: () => {
-                    file.start();
-                },
+                start: () => file.start(),
                 stop: () => file.stop(),
                 flush: () => file.flush()
             };
