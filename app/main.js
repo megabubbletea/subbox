@@ -47,8 +47,8 @@ class Subbox {
         });
     }
 
-    async handleShowSaveDialog () {
-        return await dialog.showSaveDialog({
+    handleShowSaveDialog () {
+        return dialog.showSaveDialogSync({
             title: 'Save Subtitles',
             filters: [
                 { name: 'SubRip Subtitle', extensions: ['srt'] }
