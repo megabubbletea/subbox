@@ -1,159 +1,188 @@
-document.addEventListener('DOMContentLoaded', () => {
-    let dropZone = document.getElementById('dropzone');
+// Event handler functions
+class DropZoneHandler {
+    constructor () {
+        this.dropZone = document.getElementById('dropzone');
+        this.setupEventListeners();
+    }
 
-    // Prevent default drag behaviors
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
-    });
+    setupEventListeners () {
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            this.dropZone.addEventListener(eventName, this.preventDefaults);
+            document.body.addEventListener(eventName, this.preventDefaults);
+        });
 
-    // Highlight drop area when item is dragged over it
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, highlight, false);
-    });
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            this.dropZone.addEventListener(eventName, this.highlight);
+        });
 
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, unhighlight, false);
-    });
+        ['dragleave', 'drop'].forEach(eventName => {
+            this.dropZone.addEventListener(eventName, this.unhighlight);
+        });
 
-    // Handle dropped files
-    dropZone.addEventListener('drop', handleDrop, false);
-});
+        // Handle dropped files
+        this.dropZone.addEventListener('drop', this.handleDrop);
+    }
 
-function preventDefaults (e) {
-    e.preventDefault();
-    e.stopPropagation();
+    preventDefaults (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    highlight () {
+        document.getElementById('dropzone').classList.add('highlight');
+    }
+
+    unhighlight () {
+        document.getElementById('dropzone').classList.remove('highlight');
+    }
+
+    handleDrop (e) {
+        const files = e.dataTransfer.files;
+        Array.from(files).forEach(file => new SubtitleExtractor(file).process());
+    }
 }
 
-function highlight (e) {
-    document.getElementById('dropzone').classList.add('highlight');
-}
+class SubtitleExtractor {
+    constructor (file) {
+        this.file = file;
+        this.mp4boxfile = window.api.mp4box.createFile();
+        this.subtitles = [];
+    }
 
-function unhighlight (e) {
-    document.getElementById('dropzone').classList.remove('highlight');
-}
+    process () {
+        if (!this.file) return;
 
-function handleDrop (e) {
-    let dt = e.dataTransfer;
-    let files = dt.files;
+        this.mp4boxfile.onReady(this.handleFileReady.bind(this));
+        this.setupFileReader();
+    }
 
-    // Process each file
-    Array.from(files).forEach(processFile);
-}
+    handleFileReady (info) {
+        this.displayFileInfo(info);
+        this.extractSubtitles(info);
+    }
 
-function processFile (file) {
-    if (!file) return;
-
-    let mp4boxfile = window.api.mp4box.createFile();
-
-    mp4boxfile.onReady((info) => {
-        // Get the fileinfo element
+    displayFileInfo (info) {
         const fileInfoDiv = document.getElementById('fileinfo');
+        fileInfoDiv.innerHTML = this.generateFileInfoHTML(info);
+    }
 
-        // Create HTML content from the info object
-        const html = `
+    generateFileInfoHTML (info) {
+        return `
             <h2>File Information</h2>
             <ul>
                 <li>Duration: ${info.duration / info.timescale} seconds</li>
                 <li>Timescale: ${info.timescale}</li>
                 <li>Tracks: ${info.tracks.length}</li>
-                ${info.tracks.map(track => `
-                    <li>
-                        Track ${track.id}:
-                        <ul>
-                            <li>Type: ${track.type}</li>
-                            <li>Codec: ${track.codec}</li>
-                            <li>Language: ${track.language}</li>
-                            <li>Duration: ${track.duration / track.timescale} seconds</li>
-                        </ul>
-                    </li>
-                `).join('')}
+                ${this.generateTrackListHTML(info.tracks)}
             </ul>
         `;
+    }
 
-        // Set the HTML content
-        fileInfoDiv.innerHTML = html;
+    generateTrackListHTML (tracks) {
+        return tracks.map(track => `
+            <li>
+                Track ${track.id}:
+                <ul>
+                    <li>Type: ${track.type}</li>
+                    <li>Codec: ${track.codec}</li>
+                    <li>Language: ${track.language}</li>
+                    <li>Duration: ${track.duration / track.timescale} seconds</li>
+                </ul>
+            </li>
+        `).join('');
+    }
 
-        // Extract subtitles from tracks
+    extractSubtitles (info) {
         info.tracks.forEach(track => {
             if (track.type === 'subtitles') {
-                console.log(`Found subtitle track: ${track.id}`);
-
-                // Set up subtitle extraction
-                mp4boxfile.setExtractionOptions(track.id, null, {
-                    nbSamples: 1000  // Number of samples to extract at once
-                });
-
-                let subtitles = [];
-
-                mp4boxfile.onSamples((id, user, samples) => {
-                    console.log('Received ' + samples.length + ' samples on track ' + id + ' for object ' + user);
-                    samples.forEach(sample => {
-                        if (sample.data) {
-                            const text = new TextDecoder().decode(sample.data);
-                            const startTime = sample.cts / sample.timescale;
-                            const endTime = (sample.cts + sample.duration) / sample.timescale;
-
-                            subtitles.push({
-                                start: startTime,
-                                end: endTime,
-                                text: text
-                            });
-                        }
-                    });
-
-                    // Convert to SRT format
-                    const srtContent = subtitles.map((sub, index) => {
-                        const formatTime = (seconds) => {
-                            const pad = (num) => num.toString().padStart(2, '0');
-                            const hours = Math.floor(seconds / 3600);
-                            const minutes = Math.floor((seconds % 3600) / 60);
-                            const secs = Math.floor(seconds % 60);
-                            const ms = Math.floor((seconds * 1000) % 1000);
-                            return `${pad(hours)}:${pad(minutes)}:${pad(secs)},${ms.toString().padStart(3, '0')}`;
-                        };
-
-                        return `${index + 1}\n${formatTime(sub.start)} --> ${formatTime(sub.end)}\n${sub.text}\n`;
-                    }).join('\n');
-
-                    // Open Save As dialog and save the file
-                    window.api.showSaveDialog().then(result => {
-                        if (!result.canceled) {
-                            window.api.writeFile(result.filePath, srtContent)
-                                .then(() => {
-                                    console.log(`Subtitles saved to: ${result.filePath}`);
-                                })
-                                .catch(err => {
-                                    console.error('Error saving subtitles:', err);
-                                });
-                        }
-                    });
-                });
-
-                // Start extraction
-                mp4boxfile.start();
+                this.setupSubtitleExtraction(track);
             }
         });
-    });
+    }
 
-    const reader = new FileReader();
+    setupSubtitleExtraction (track) {
+        console.log(`Found subtitle track: ${track.id}`);
 
-    reader.onload = function (e) {
-        try {
-            const arrayBuffer = e.target.result;
-            // Add fileStart property to the buffer
-            mp4boxfile.appendBuffer(arrayBuffer, 0);
-            console.log('File processed successfully');
+        this.mp4boxfile.setExtractionOptions(track.id, null, {
+            nbSamples: 1000
+        });
 
-            mp4boxfile.flush();
-        } catch (error) {
-            console.error('Error processing file:', error);
-        }
-    };
+        this.mp4boxfile.onSamples((id, user, samples) => {
+            this.processSamples(samples);
+            this.saveSRTFile();
+        });
 
-    reader.onerror = function (error) {
-        console.error('Error reading file:', error);
-    };
+        this.mp4boxfile.start();
+    }
 
-    reader.readAsArrayBuffer(file);
+    processSamples (samples) {
+        samples.forEach(sample => {
+            if (sample.data) {
+                const text = new TextDecoder().decode(sample.data);
+                this.subtitles.push({
+                    start: sample.cts / sample.timescale,
+                    end: (sample.cts + sample.duration) / sample.timescale,
+                    text: text
+                });
+            }
+        });
+    }
+
+    formatTime (seconds) {
+        const pad = (num) => num.toString().padStart(2, '0');
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        const ms = Math.floor((seconds * 1000) % 1000);
+        return `${pad(hours)}:${pad(minutes)}:${pad(secs)},${ms.toString().padStart(3, '0')}`;
+    }
+
+    generateSRTContent () {
+        return this.subtitles.map((sub, index) =>
+            `${index + 1}\n${this.formatTime(sub.start)} --> ${this.formatTime(sub.end)}\n${sub.text}\n`
+        ).join('\n');
+    }
+
+    saveSRTFile () {
+        const srtContent = this.generateSRTContent();
+        window.api.showSaveDialog()
+            .then(result => {
+                if (!result.canceled) {
+                    return window.api.writeFile(result.filePath, srtContent);
+                }
+            })
+            .then(() => {
+                console.log('Subtitles saved successfully');
+            })
+            .catch(err => {
+                console.error('Error saving subtitles:', err);
+            });
+    }
+
+    setupFileReader () {
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            try {
+                this.mp4boxfile.appendBuffer(e.target.result, 0);
+                console.log('File processed successfully');
+                this.mp4boxfile.flush();
+            } catch (error) {
+                console.error('Error processing file:', error);
+            }
+        };
+
+        reader.onerror = (error) => {
+            console.error('Error reading file:', error);
+        };
+
+        reader.readAsArrayBuffer(this.file);
+    }
 }
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+    new DropZoneHandler();
+});
