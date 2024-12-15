@@ -19,8 +19,8 @@ class Subbox {
     }
 
     registerIpcHandlers () {
-        ipcMain.handle('show-save-dialog', this.handleShowSaveDialog);
-        ipcMain.handle('write-file', this.handleWriteFile);
+        ipcMain.handle('show-save-dialog', this.handleShowSaveDialog.bind(this));
+        ipcMain.handle('write-file', this.handleWriteFile.bind(this));
     }
 
     createWindow () {
@@ -47,11 +47,12 @@ class Subbox {
     }
 
     handleShowSaveDialog () {
-        return dialog.showSaveDialogSync({
+        return dialog.showSaveDialog(this.mainWindow, {
             title: 'Save Subtitles',
             filters: [
                 { name: 'SubRip Subtitle', extensions: ['srt'] }
-            ]
+            ],
+            properties: ['dontAddToRecent']
         });
     }
 
